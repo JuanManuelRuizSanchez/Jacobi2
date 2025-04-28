@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # --- Configuración ---
-dimensiones=(16000 64000 128000 192000 256000)
+dimensiones=(16000 32000 64000 128000 256000)
 hilos=(2 4 8 16 32)
 iteraciones=10
 
