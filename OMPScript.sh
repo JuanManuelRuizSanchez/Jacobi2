@@ -6,63 +6,49 @@ hilos=(2 4 8 16 32)
 iteraciones=10
 
 # --- Compilación ---
-echo "Compilando versión secuencial..."
-gcc JacobiSec.c -o JacobiSec
-if [ $? -ne 0 ]; then
-    echo "Error en la compilación de JacobiSec.c. Abortando..."
-    exit 1
-fi
-
-echo "Compilando versión OpenMP sin optimización..."
+echo "Compilando JacobiOMP sin optimización..."
 gcc JacobiOMP.c -o JacobiOMP -fopenmp
-if [ $? -ne 0 ]; then
-    echo "Error en la compilación de JacobiOMP.c. Abortando..."
-    exit 1
-fi
 
-echo "Compilando versión OpenMP con optimización -O3..."
+echo "Compilando JacobiOMP con optimización -O3..."
 gcc JacobiOMP.c -o JacobiOMP_O3 -fopenmp -O3
-if [ $? -ne 0 ]; then
-    echo "Error en la compilación de JacobiOMP.c con optimización. Abortando..."
-    exit 1
-fi
+
+echo "Compilando JacobiSec..."
+gcc JacobiSec.c -o JacobiSec
 
 # --- Inicializar archivos CSV ---
-echo "Dimension,Iteracion,Tiempo" > ResultadosJacobiSec.csv
-echo "Dimension,Hilos,Iteracion,Tiempo" > ResultadosJacobiOMP.csv
-echo "Dimension,Hilos,Iteracion,Tiempo" > ResultadosJacobiOMP_O3.csv
+echo "Dimension,Hilos,Iteracion,Tiempo" > ResultadosOMP.csv
+echo "Dimension,Hilos,Iteracion,Tiempo" > ResultadosOMP_O3.csv
+echo "Dimension,Iteracion,Tiempo" > ResultadosSEQ.csv
 
-# --- Pruebas Secuenciales ---
-echo "Ejecutando pruebas secuenciales..."
+# --- Pruebas JacobiOMP sin optimización ---
+echo "Ejecutando JacobiOMP sin optimización..."
+for d in "${dimensiones[@]}"; do
+    for h in "${hilos[@]}"; do
+        for ((i=1; i<=iteraciones; i++)); do
+            tiempo=$(./JacobiOMP $d $d $h)
+            echo "$d,$h,$i,$tiempo" >> ResultadosOMP.csv
+        done
+    done
+done
+
+# --- Pruebas JacobiOMP con optimización -O3 ---
+echo "Ejecutando JacobiOMP con optimización -O3..."
+for d in "${dimensiones[@]}"; do
+    for h in "${hilos[@]}"; do
+        for ((i=1; i<=iteraciones; i++)); do
+            tiempo=$(./JacobiOMP_O3 $d $d $h)
+            echo "$d,$h,$i,$tiempo" >> ResultadosOMP_O3.csv
+        done
+    done
+done
+
+# --- Pruebas JacobiSec ---
+echo "Ejecutando JacobiSec (secuencial)..."
 for d in "${dimensiones[@]}"; do
     for ((i=1; i<=iteraciones; i++)); do
-        tiempo=$( (time ./JacobiSec $d $d) 2>&1 | grep real | awk '{print $2}' | sed 's/m//; s/s//')
-        echo "$d,$i,$tiempo" >> ResultadosJacobiSec.csv
+        tiempo=$(./JacobiSec $d $d)
+        echo "$d,$i,$tiempo" >> ResultadosSEQ.csv
     done
 done
 
-# --- Pruebas OpenMP sin optimización ---
-echo "Ejecutando pruebas OpenMP sin optimización..."
-for d in "${dimensiones[@]}"; do
-    for h in "${hilos[@]}"; do
-        export OMP_NUM_THREADS=$h
-        for ((i=1; i<=iteraciones; i++)); do
-            tiempo=$( (time ./JacobiOMP $d $i $h) 2>&1 | grep real | awk '{print $2}' | sed 's/m//; s/s//')
-            echo "$d,$h,$i,$tiempo" >> ResultadosJacobiOMP.csv
-        done
-    done
-done
-
-# --- Pruebas OpenMP con optimización -O3 ---
-echo "Ejecutando pruebas OpenMP con optimización -O3..."
-for d in "${dimensiones[@]}"; do
-    for h in "${hilos[@]}"; do
-        export OMP_NUM_THREADS=$h
-        for ((i=1; i<=iteraciones; i++)); do
-            tiempo=$( (time ./JacobiOMP_O3 $d $i $h) 2>&1 | grep real | awk '{print $2}' | sed 's/m//; s/s//')
-            echo "$d,$h,$i,$tiempo" >> ResultadosJacobiOMP_O3.csv
-        done
-    done
-done
-
-echo "✅ Pruebas completadas. Resultados en ResultadosJacobiSec.csv, ResultadosJacobiOMP.csv y ResultadosJacobiOMP_O3.csv"
+echo "✅ Pruebas finalizadas. Resultados guardados en ResultadosOMP.csv, ResultadosOMP_O3.csv y ResultadosSEQ.csv"
